@@ -1,0 +1,70 @@
+{
+  "title": "超市销售占比",
+  "categories": [
+    {
+      "name": "粮油",
+      "value": 45000,
+      "color": "#4A90D9",
+      "children": [
+        {
+          "name": "米",
+          "value": 20000,
+          "children": [
+            { "name": "东北大米", "value": 12000 },
+            { "name": "泰国香米", "value": 8000 }
+          ]
+        },
+        {
+          "name": "油",
+          "value": 15000,
+          "children": [
+            { "name": "花生油", "value": 9000 },
+            { "name": "玉米油", "value": 6000 }
+          ]
+        },
+        {
+          "name": "盐",
+          "value": 10000,
+          "children": [
+            { "name": "碘盐", "value": 7000 },
+            { "name": "不加碘盐", "value": 3000 }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "水果",
+      "value": 30000,
+      "color": "#E67E22",
+      "children": [
+        { "name": "苹果", "value": 12000 },
+        { "name": "香蕉", "value": 8000 },
+        { "name": "橙子", "value": 6000 },
+        { "name": "葡萄", "value": 4000 }
+      ]
+    },
+    {
+      "name": "饮料",
+      "value": 25000,
+      "color": "#2ECC71",
+      "children": [
+        {
+          "name": "碳酸饮料",
+          "value": 10000,
+          "children": [
+            { "name": "可乐", "value": 6000 },
+            { "name": "雪碧", "value": 4000 }
+          ]
+        },
+        {
+          "name": "茶饮",
+          "value": 15000,
+          "children": [
+            { "name": "绿茶", "value": 9000 },
+            { "name": "红茶", "value": 6000 }
+          ]
+        }
+      ]
+    }
+  ]
+}

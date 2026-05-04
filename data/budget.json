@@ -1,0 +1,70 @@
+{
+  "title": "公司预算分配",
+  "config": {
+    "centerRadius": 55,
+    "ringWidth": 38,
+    "gapWidth": 8
+  },
+  "categories": [
+    {
+      "name": "研发",
+      "value": 1200,
+      "color": "#4A90D9",
+      "children": [
+        {
+          "name": "前端",
+          "value": 400,
+          "children": [
+            { "name": "Web组", "value": 250 },
+            { "name": "移动端", "value": 150 }
+          ]
+        },
+        {
+          "name": "后端",
+          "value": 500,
+          "children": [
+            { "name": "微服务", "value": 300 },
+            { "name": "数据平台", "value": 200 }
+          ]
+        },
+        { "name": "测试", "value": 300 }
+      ]
+    },
+    {
+      "name": "市场",
+      "value": 800,
+      "color": "#E67E22",
+      "children": [
+        { "name": "线上推广", "value": 350 },
+        { "name": "线下活动", "value": 250 },
+        { "name": "品牌建设", "value": 200 }
+      ]
+    },
+    {
+      "name": "运营",
+      "value": 600,
+      "color": "#2ECC71",
+      "children": [
+        {
+          "name": "人力",
+          "value": 300,
+          "children": [
+            { "name": "薪酬", "value": 200 },
+            { "name": "培训", "value": 100 }
+          ]
+        },
+        { "name": "办公", "value": 180 },
+        { "name": "其他", "value": 120 }
+      ]
+    },
+    {
+      "name": "销售",
+      "value": 400,
+      "color": "#E74C3C",
+      "children": [
+        { "name": "提成", "value": 280 },
+        { "name": "差旅", "value": 120 }
+      ]
+    }
+  ]
+}

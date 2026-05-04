@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多圈圆环图 - 数据编辑器</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0f0f23;
+  color: #e0e0e0;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #16162a;
+  border-bottom: 1px solid #2a2a4a;
+  flex-shrink: 0;
+  z-index: 10;
+}
+#toolbar .sep { width: 1px; height: 20px; background: #2a2a4a; margin: 0 4px; }
+#toolbar button, #toolbar select {
+  padding: 5px 12px;
+  border: 1px solid #3a3a5a;
+  border-radius: 4px;
+  background: #1a1a2e;
+  color: #ccc;
+  cursor: pointer;
+  font-size: 12px;
+  font-family: inherit;
+}
+#toolbar button:hover, #toolbar select:hover {
+  background: #2a2a4e;
+  border-color: #4A90D9;
+}
+
+#main {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+#preview-wrap {
+  flex: 1;
+  position: relative;
+  min-width: 300px;
+  background: #0a0a1a;
+}
+#preview-wrap canvas { display: block; }
+#preview-wrap .info {
+  position: absolute;
+  top: 8px; left: 8px;
+  font-size: 11px;
+  color: #666;
+  pointer-events: none;
+}
+
+#editor-panel {
+  width: 420px;
+  background: #14142a;
+  border-left: 1px solid #2a2a4a;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+#tab-bar {
+  display: flex;
+  border-bottom: 1px solid #2a2a4a;
+  flex-shrink: 0;
+}
+.tab-btn {
+  flex: 1;
+  padding: 8px 0;
+  text-align: center;
+  cursor: pointer;
+  font-size: 13px;
+  border: none;
+  background: transparent;
+  color: #888;
+  border-bottom: 2px solid transparent;
+  font-family: inherit;
+}
+.tab-btn:hover { color: #ccc; }
+.tab-btn.active {
+  color: #4A90D9;
+  border-bottom-color: #4A90D9;
+}
+
+#tab-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+.tab-panel { display: none; padding: 12px; }
+.tab-panel.active { display: block; }
+
+/* Tree Editor */
+.tree-node { margin-left: 0; }
+.tree-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 0;
+  border-radius: 3px;
+}
+.tree-row:hover { background: #1e1e3a; }
+.tree-row .indent { width: 20px; flex-shrink: 0; text-align: right; color: #555; font-size: 10px; }
+.tree-row .expand { width: 16px; flex-shrink: 0; cursor: pointer; color: #888; text-align: center; font-size: 10px; user-select: none; }
+.tree-row input[type="text"] {
+  background: #1a1a2e; border: 1px solid #3a3a5a; border-radius: 3px;
+  color: #e0e0e0; padding: 2px 6px; font-size: 12px; font-family: inherit;
+  min-width: 40px;
+}
+.tree-row input.name { flex: 1; min-width: 60px; }
+.tree-row input.val { width: 70px; text-align: right; }
+.tree-row input.color { width: 60px; }
+.tree-row .btn-sm {
+  padding: 2px 6px; font-size: 10px;
+  background: #1a1a2e; border: 1px solid #3a3a5a;
+  color: #aaa; border-radius: 3px; cursor: pointer;
+  white-space: nowrap;
+}
+.tree-row .btn-sm:hover { background: #2a2a4e; }
+.tree-row .btn-sm.del { color: #E74C3C; border-color: #5a2a2a; }
+.tree-row .btn-sm.del:hover { background: #3a1a1a; }
+.tree-row .btn-sm.add { color: #2ECC71; border-color: #2a5a2a; }
+.tree-row .btn-sm.add:hover { background: #1a3a1a; }
+.tree-children { overflow: hidden; }
+.tree-children.collapsed { display: none; }
+
+#root-desc { font-size: 11px; color: #666; margin-bottom: 10px; }
+
+/* Config Panel */
+.config-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.config-row label { width: 80px; flex-shrink: 0; color: #aaa; }
+.config-row input[type="range"] { flex: 1; }
+.config-row input[type="text"], .config-row input[type="number"] {
+  background: #1a1a2e; border: 1px solid #3a3a5a; border-radius: 3px;
+  color: #e0e0e0; padding: 3px 6px; font-size: 12px; font-family: inherit;
+  width: 60px;
+}
+.config-row input[type="checkbox"] { margin-left: 4px; }
+.config-section { margin-bottom: 16px; }
+.config-section h4 {
+  font-size: 12px; color: #4A90D9; margin-bottom: 8px;
+  padding-bottom: 4px; border-bottom: 1px solid #2a2a4a;
+}
+.val-display { color: #4A90D9; font-size: 11px; width: 35px; text-align: right; }
+
+/* Tooltip */
+#tooltip {
+  position: fixed; pointer-events: none;
+  background: rgba(20, 20, 50, 0.95); border: 1px solid #4a4a7a;
+  border-radius: 6px; padding: 8px 12px; font-size: 12px;
+  color: #e0e0e0; display: none; z-index: 100; white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+#tooltip .tip-name { font-weight: bold; font-size: 13px; color: #fff; }
+#tooltip .tip-row { margin-top: 2px; color: #bbb; }
+#tooltip .tip-color { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <button id="btn-import">导入 JSON</button>
+  <button id="btn-export">导出 JSON</button>
+  <span class="sep"></span>
+  <select id="sample-select">
+    <option value="">加载示例...</option>
+    <option value="supermarket">超市销售占比</option>
+    <option value="budget">公司预算分配</option>
+  </select>
+  <span class="sep"></span>
+  <button id="btn-clear">清空</button>
+</div>
+
+<div id="main">
+  <div id="preview-wrap">
+    <canvas id="preview"></canvas>
+    <div class="info">实时预览</div>
+  </div>
+  <div id="editor-panel">
+    <div id="tab-bar">
+      <button class="tab-btn active" data-tab="data">数据 (Tree)</button>
+      <button class="tab-btn" data-tab="config">配置 (Config)</button>
+    </div>
+    <div id="tab-content">
+      <div class="tab-panel active" id="panel-data">
+        <div id="root-desc">编辑分类树形结构，修改后自动刷新预览</div>
+        <div id="tree-root"></div>
+        <div style="margin-top: 12px;">
+          <button class="tab-btn" id="btn-add-root" style="width:100%; padding:6px; border:1px dashed #3a3a5a; background:transparent; color:#888;">+ 添加顶级分类</button>
+        </div>
+      </div>
+      <div class="tab-panel" id="panel-config">
+        <div class="config-section">
+          <h4>圆环布局</h4>
+          <div class="config-row">
+            <label>内环半径</label>
+            <input type="range" id="cfg-centerRadius" min="30" max="120" value="60">
+            <span class="val-display" id="val-centerRadius">60</span>
+          </div>
+          <div class="config-row">
+            <label>环宽度</label>
+            <input type="range" id="cfg-ringWidth" min="20" max="80" value="36">
+            <span class="val-display" id="val-ringWidth">36</span>
+          </div>
+          <div class="config-row">
+            <label>环间隙</label>
+            <input type="range" id="cfg-gapWidth" min="0" max="20" value="6">
+            <span class="val-display" id="val-gapWidth">6</span>
+          </div>
+          <div class="config-row">
+            <label>扇区间隙</label>
+            <input type="range" id="cfg-segmentGap" min="0" max="5" value="1.5" step="0.5">
+            <span class="val-display" id="val-segmentGap">1.5</span>
+          </div>
+        </div>
+        <div class="config-section">
+          <h4>显示设置</h4>
+          <div class="config-row">
+            <label>显示标签</label>
+            <input type="checkbox" id="cfg-labelShow" checked>
+          </div>
+          <div class="config-row">
+            <label>最小标签角</label>
+            <input type="range" id="cfg-labelMinAngle" min="5" max="45" value="15">
+            <span class="val-display" id="val-labelMinAngle">15°</span>
+          </div>
+          <div class="config-row">
+            <label>标签字号</label>
+            <input type="range" id="cfg-labelFontSize" min="8" max="20" value="12">
+            <span class="val-display" id="val-labelFontSize">12</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<script>
+var SAMPLE_DATA = {
+  "supermarket": {"title":"超市销售占比","categories":[{"name":"粮油","value":45000,"color":"#4A90D9","children":[{"name":"米","value":20000,"children":[{"name":"东北大米","value":12000},{"name":"泰国香米","value":8000}]},{"name":"油","value":15000,"children":[{"name":"花生油","value":9000},{"name":"玉米油","value":6000}]},{"name":"盐","value":10000,"children":[{"name":"碘盐","value":7000},{"name":"不加碘盐","value":3000}]}]},{"name":"水果","value":30000,"color":"#E67E22","children":[{"name":"苹果","value":12000},{"name":"香蕉","value":8000},{"name":"橙子","value":6000},{"name":"葡萄","value":4000}]},{"name":"饮料","value":25000,"color":"#2ECC71","children":[{"name":"碳酸饮料","value":10000,"children":[{"name":"可乐","value":6000},{"name":"雪碧","value":4000}]},{"name":"茶饮","value":15000,"children":[{"name":"绿茶","value":9000},{"name":"红茶","value":6000}]}]}]},
+  "budget": {"title":"公司预算分配","config":{"centerRadius":55,"ringWidth":38,"gapWidth":8},"categories":[{"name":"研发","value":1200,"color":"#4A90D9","children":[{"name":"前端","value":400,"children":[{"name":"Web组","value":250},{"name":"移动端","value":150}]},{"name":"后端","value":500,"children":[{"name":"微服务","value":300},{"name":"数据平台","value":200}]},{"name":"测试","value":300}]},{"name":"市场","value":800,"color":"#E67E22","children":[{"name":"线上推广","value":350},{"name":"线下活动","value":250},{"name":"品牌建设","value":200}]},{"name":"运营","value":600,"color":"#2ECC71","children":[{"name":"人力","value":300,"children":[{"name":"薪酬","value":200},{"name":"培训","value":100}]},{"name":"办公","value":180},{"name":"其他","value":120}]},{"name":"销售","value":400,"color":"#E74C3C","children":[{"name":"提成","value":280},{"name":"差旅","value":120}]}]}
+};
+</script>
+<script src="js/donut-chart.js"></script>
+<script src="js/editor.js"></script>
+</body>
+</html>

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>多圈圆环图 - 图表查看</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: #0f0f23;
+  color: #e0e0e0;
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+#toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #16162a;
+  border-bottom: 1px solid #2a2a4a;
+  flex-shrink: 0;
+  z-index: 10;
+}
+#toolbar .sep { width: 1px; height: 20px; background: #2a2a4a; margin: 0 4px; }
+#toolbar button, #toolbar select {
+  padding: 5px 12px; border: 1px solid #3a3a5a; border-radius: 4px;
+  background: #1a1a2e; color: #ccc; cursor: pointer; font-size: 12px; font-family: inherit; white-space: nowrap;
+}
+#toolbar button:hover, #toolbar select:hover { background: #2a2a4e; border-color: #4A90D9; }
+#toolbar button.active { background: #4A90D9; border-color: #4A90D9; color: #fff; }
+#toolbar .title { font-size: 14px; font-weight: bold; margin-left: 8px; color: #fff; }
+#breadcrumb {
+  display: flex; align-items: center; gap: 4px; font-size: 12px; color: #aaa; margin-left: 12px;
+}
+#breadcrumb span { cursor: pointer; color: #4A90D9; }
+#breadcrumb span:hover { text-decoration: underline; }
+#breadcrumb .arrow { color: #666; cursor: default; }
+#breadcrumb .current { color: #fff; cursor: default; font-weight: bold; }
+
+#main { display: flex; flex: 1; min-height: 0; }
+#chart-wrap { flex: 1; position: relative; min-width: 0; }
+#chart-wrap canvas { display: block; cursor: pointer; }
+
+#right-panel {
+  width: 240px; background: #16162a; border-left: 1px solid #2a2a4a;
+  overflow-y: auto; flex-shrink: 0; display: flex; flex-direction: column;
+}
+.panel-section {
+  padding: 10px 12px;
+  border-bottom: 1px solid #1e1e3a;
+}
+.panel-section h4 {
+  font-size: 12px; color: #888; margin-bottom: 8px; font-weight: normal; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.theme-grid { display: flex; gap: 4px; flex-wrap: wrap; }
+.theme-btn {
+  padding: 4px 8px; font-size: 11px; border: 1px solid #3a3a5a; border-radius: 13px;
+  background: transparent; color: #aaa; cursor: pointer; font-family: inherit; white-space: nowrap;
+}
+.theme-btn:hover { border-color: #4A90D9; color: #ccc; }
+.theme-btn.active { background: #4A90D9; border-color: #4A90D9; color: #fff; }
+
+.setting-row {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 6px; font-size: 11px;
+}
+.setting-row label { width: 48px; flex-shrink: 0; color: #aaa; text-align: right; }
+.setting-row input[type="range"] { flex: 1; height: 4px; background: #2a2a4a; border-radius: 2px; outline: none; -webkit-appearance: none; }
+.setting-row input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; border-radius: 50%; background: #4A90D9; cursor: pointer; }
+.setting-row .val { width: 28px; text-align: right; color: #4A90D9; font-size: 10px; }
+.setting-row input[type="color"] {
+  width: 28px; height: 20px; border: 1px solid #3a3a5a; border-radius: 3px;
+  background: transparent; cursor: pointer; padding: 0;
+}
+
+#legend-section { flex: 1; min-height: 0; padding: 10px 12px; display: flex; flex-direction: column; }
+#legend-section h4 { margin-bottom: 8px; color: #888; font-size: 12px; font-weight: normal; }
+#legend-list { flex: 1; overflow-y: auto; font-size: 12px; }
+.legend-item {
+  display: flex; align-items: center; gap: 6px; padding: 3px 4px; border-radius: 3px; cursor: pointer; user-select: none;
+}
+.legend-item:hover { background: #1e1e3a; }
+.legend-item .swatch { width: 12px; height: 12px; border-radius: 2px; flex-shrink: 0; border: 1px solid rgba(255,255,255,0.15); }
+.legend-item .lbl { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.legend-item .lval { color: #777; font-size: 10px; }
+.legend-item.hidden { opacity: 0.3; }
+.legend-item.hidden .swatch { background: #333 !important; }
+.legend-item .exp {
+  width: 14px; flex-shrink: 0; text-align: center; color: #555; font-size: 9px; cursor: pointer;
+}
+.legend-item .exp:hover { color: #aaa; }
+.legend-children { padding-left: 14px; }
+.legend-children.collapsed { display: none; }
+.legend-reset {
+  font-size: 10px; color: #4A90D9; cursor: pointer; text-align: center; padding: 2px; margin-top: 4px;
+  border-top: 1px solid #1e1e3a;
+}
+.legend-reset:hover { text-decoration: underline; }
+
+#tooltip {
+  position: fixed; pointer-events: none;
+  background: rgba(20, 20, 50, 0.95); border: 1px solid #4a4a7a;
+  border-radius: 6px; padding: 8px 12px; font-size: 12px;
+  color: #e0e0e0; display: none; z-index: 100; white-space: nowrap;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+}
+#tooltip .tip-name { font-weight: bold; font-size: 13px; color: #fff; }
+#tooltip .tip-row { margin-top: 2px; color: #bbb; }
+#tooltip .tip-color { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
+
+#help-overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.7); display: none; z-index: 200;
+  justify-content: center; align-items: center;
+}
+#help-overlay.show { display: flex; }
+#help-box {
+  background: #1a1a2e; border: 1px solid #3a3a5a; border-radius: 8px;
+  padding: 24px; max-width: 460px; width: 90%;
+}
+#help-box h2 { font-size: 18px; margin-bottom: 12px; }
+#help-box p { font-size: 13px; line-height: 1.8; color: #bbb; }
+#help-box kbd {
+  background: #2a2a4a; border: 1px solid #4a4a6a; border-radius: 3px;
+  padding: 1px 6px; font-size: 11px; font-family: inherit;
+}
+#help-box button {
+  margin-top: 16px; padding: 6px 20px; background: #4A90D9; border: none;
+  border-radius: 4px; color: #fff; cursor: pointer; font-size: 13px;
+}
+</style>
+</head>
+<body>
+
+<div id="toolbar">
+  <span class="title">多圈圆环图</span>
+  <span class="sep"></span>
+  <button id="btn-svg" title="导出 SVG">导出 SVG</button>
+  <button id="btn-png" title="导出 PNG">导出 PNG</button>
+  <span class="sep"></span>
+  <button id="btn-reset" title="重置视图">重置</button>
+  <button id="btn-help" title="帮助">?</button>
+  <span id="breadcrumb"></span>
+</div>
+
+<div id="main">
+  <div id="chart-wrap">
+    <canvas id="chart"></canvas>
+  </div>
+  <div id="right-panel">
+    <div class="panel-section">
+      <h4>主题 Theme</h4>
+      <div class="theme-grid" id="theme-btns"></div>
+    </div>
+    <div class="panel-section">
+      <h4>圆环布局</h4>
+      <div class="setting-row">
+        <label>直径</label>
+        <input type="range" id="cfg-centerRadius" min="30" max="140" value="60">
+        <span class="val" id="val-centerRadius">60</span>
+      </div>
+      <div class="setting-row">
+        <label>环宽</label>
+        <input type="range" id="cfg-ringWidth" min="16" max="80" value="36">
+        <span class="val" id="val-ringWidth">36</span>
+      </div>
+      <div class="setting-row">
+        <label>间隙</label>
+        <input type="range" id="cfg-gapWidth" min="0" max="24" value="6">
+        <span class="val" id="val-gapWidth">6</span>
+      </div>
+    </div>
+    <div class="panel-section">
+      <h4>文字设置</h4>
+      <div class="setting-row">
+        <label>字号</label>
+        <input type="range" id="cfg-fontSize" min="8" max="22" value="12">
+        <span class="val" id="val-fontSize">12</span>
+      </div>
+      <div class="setting-row">
+        <label>颜色</label>
+        <input type="color" id="cfg-labelColor" value="#e0e0e0">
+      </div>
+    </div>
+    <div id="legend-section">
+      <h4>图例 Legend</h4>
+      <div id="legend-list"></div>
+      <div class="legend-reset" id="legend-reset">↺ 全部显示</div>
+    </div>
+  </div>
+</div>
+
+<div id="tooltip"></div>
+
+<div id="help-overlay">
+  <div id="help-box">
+    <h2>使用说明</h2>
+    <p>
+      <kbd>悬停</kbd> 查看扇区详情<br>
+      <kbd>点击扇区</kbd> 下钻查看子分类详情<br>
+      <kbd>点击空白 / 中心</kbd> 返回上级<br>
+      <kbd>图例</kbd> 点击展开/收起，切换显示<br>
+      <kbd>Ctrl + 滚轮</kbd> 缩放图表<br>
+    </p>
+    <button id="help-close">关闭</button>
+  </div>
+</div>
+
+<script>
+var DEFAULT_DATA = {"title":"超市销售占比","categories":[{"name":"粮油","value":45000,"color":"#4A90D9","children":[{"name":"米","value":20000,"children":[{"name":"东北大米","value":12000},{"name":"泰国香米","value":8000}]},{"name":"油","value":15000,"children":[{"name":"花生油","value":9000},{"name":"玉米油","value":6000}]},{"name":"盐","value":10000,"children":[{"name":"碘盐","value":7000},{"name":"不加碘盐","value":3000}]}]},{"name":"水果","value":30000,"color":"#E67E22","children":[{"name":"苹果","value":12000},{"name":"香蕉","value":8000},{"name":"橙子","value":6000},{"name":"葡萄","value":4000}]},{"name":"饮料","value":25000,"color":"#2ECC71","children":[{"name":"碳酸饮料","value":10000,"children":[{"name":"可乐","value":6000},{"name":"雪碧","value":4000}]},{"name":"茶饮","value":15000,"children":[{"name":"绿茶","value":9000},{"name":"红茶","value":6000}]}]}]};
+</script>
+<script src="js/donut-chart.js"></script>
+<script src="js/main.js"></script>
+</body>
+</html>
